@@ -1,0 +1,231 @@
+{
+  "name": "Telegram Image Editor to Google Drive",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true,
+          "imageSize": "large"
+        }
+      },
+      "id": "b9c630a2-76fa-45ae-8fa4-3ae3084e8b24",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        304
+      ],
+      "webhookId": "375cdd4e-d9a6-4dc5-981a-3e741d719789",
+      "credentials": {
+        "telegramApi": {
+          "id": "P7Sl6daW2iK228GU",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[$json.message.photo.length - 1].file_id }}",
+        "additionalFields": {}
+      },
+      "id": "16d5f16c-54ab-46c8-b0a4-cd4d4442b611",
+      "name": "Get Image File",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        464,
+        304
+      ],
+      "webhookId": "8391e74f-ab0c-4c5f-9af2-21504b06713d",
+      "credentials": {
+        "telegramApi": {
+          "id": "P7Sl6daW2iK228GU",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "filename",
+              "name": "fileName",
+              "value": "={{ \"edited_image_\" + $now.toFormat(\"yyyyMMdd_HHmmss\") + \".png\" }}",
+              "type": "string"
+            },
+            {
+              "id": "chatid",
+              "name": "chatId",
+              "value": "={{ $(\"Telegram Trigger\").item.json.message.chat.id }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "43094200-f119-4397-acaf-bfc3bf91860a",
+      "name": "Prepare File Name",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        912,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "id": "7623967c-2edb-45a3-a42b-26e3173c4a73",
+      "name": "Upload to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1136,
+        304
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "7wcplbyOf4rA7na3",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $(\"Prepare File Name\").item.json.chatId }}",
+        "text": "={{ \"✅ Hình ảnh đã được chỉnh sửa và lưu vào Google Drive!\\n\\nTên file: \" + $json.name + \"\\n\\nXem tại: \" + $json.webViewLink }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "781dfc6d-0011-4d27-bdf5-a10d1a853dd3",
+      "name": "Send Confirmation",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        304
+      ],
+      "webhookId": "e22cd958-a18b-4d8a-971d-de0e01029bae",
+      "credentials": {
+        "telegramApi": {
+          "id": "P7Sl6daW2iK228GU",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "text": "={{ $('Telegram Trigger').item.json.message.caption }}",
+        "fontSize": 48,
+        "fontColor": "#FFFFFF",
+        "positionY": 100,
+        "options": {
+          "destinationKey": "data",
+          "format": "png",
+          "quality": 100
+        }
+      },
+      "id": "9322230c-18e5-455c-8eae-4e3280453cf3",
+      "name": "Edit Image with AI",
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        688,
+        304
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Image File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Image File": {
+      "main": [
+        [
+          {
+            "node": "Edit Image with AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare File Name": {
+      "main": [
+        [
+          {
+            "node": "Upload to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Image with AI": {
+      "main": [
+        [
+          {
+            "node": "Prepare File Name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "24eb7889-c408-4441-814c-127ea4ae17f5",
+  "meta": {
+    "instanceId": "e6b984fd2f27ab35bcc03d2445a53ea7f1f44528591f7e5c2bebc7d5f781f3e8"
+  },
+  "id": "MK036egKzyedg4WF",
+  "tags": []
+}
